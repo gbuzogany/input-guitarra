@@ -295,7 +295,6 @@ static uint32_t const * volatile mp_block_to_check = NULL;
 
 static uint8_t volatile m_blocks_transferred     = 0;
 static uint8_t          m_zero_samples_to_ignore = 2;
-static uint16_t         m_sample_value_expected = 0xCAFE;
 static bool             m_error_encountered;
 
 /**
@@ -557,21 +556,13 @@ static bool check_samples(uint32_t const * p_block)
         {
             --m_zero_samples_to_ignore;
         }
-        else
-        {
-            m_zero_samples_to_ignore = 0;
-
-            uint16_t expected_sample_l = m_sample_value_expected - 1;
-            uint16_t expected_sample_r = m_sample_value_expected + 1;
-            ++m_sample_value_expected;
-
-            if (actual_sample_l != expected_sample_l ||
-                actual_sample_r != expected_sample_r)
+        else {
+            ret_code_t ret;
+            /* Block from headphones copied into buffer, send it into microphone input */
+            ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, p_block, I2S_DATA_BLOCK_WORDS);
+            if (NRF_SUCCESS == ret)
             {
-                NRF_LOG_INFO("%3u: %04x/%04x, expected: %04x/%04x (i: %u)",
-                    m_blocks_transferred, actual_sample_l, actual_sample_r,
-                    expected_sample_l, expected_sample_r, i);
-                return false;
+                bsp_board_led_invert(LED_AUDIO_RX);
             }
         }
     }
@@ -634,6 +625,7 @@ static void check_rx_data(uint32_t const * p_block)
 
     if (m_error_encountered)
     {
+        NRF_LOG_INFO("error?");
         // bsp_board_led_off(LED_OK);
         // bsp_board_led_invert(LED_ERROR);
     }
