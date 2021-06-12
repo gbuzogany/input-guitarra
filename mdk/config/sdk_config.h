@@ -1503,7 +1503,7 @@
 // <e> NRF_LOG_BACKEND_RTT_ENABLED - nrf_log_backend_rtt - Log RTT backend
 //==========================================================
 #ifndef NRF_LOG_BACKEND_RTT_ENABLED
-#define NRF_LOG_BACKEND_RTT_ENABLED 0
+#define NRF_LOG_BACKEND_RTT_ENABLED 1
 #endif
 // <o> NRF_LOG_BACKEND_RTT_TEMP_BUFFER_SIZE - Size of buffer for partially processed strings. 
 // <i> Size of the buffer is a trade-off between RAM usage and processing.
@@ -1662,7 +1662,7 @@
 // <i> Log data is buffered and can be processed in idle.
 
 #ifndef NRF_LOG_DEFERRED
-#define NRF_LOG_DEFERRED 1
+#define NRF_LOG_DEFERRED 0
 #endif
 
 // <q> NRF_LOG_FILTERS_ENABLED  - Enable dynamic filtering of logs.
@@ -4549,7 +4549,7 @@
 // <i> or this value is actually used. It depends on which one is bigger.
 
 #ifndef SEGGER_RTT_CONFIG_BUFFER_SIZE_UP
-#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 512
+#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 2048
 #endif
 
 // <o> SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS - Maximum number of upstream buffers. 
@@ -4587,6 +4587,284 @@
 
 // </h> 
 //==========================================================
+
+/*
+19 = SD = dout
+20 = ws = lrcl
+21 = sck = bclk
+
+*/
+#ifndef I2S_ENABLED
+#define I2S_ENABLED 1
+#endif
+
+#ifndef I2S_SDIN_PIN
+#define I2S_SDIN_PIN 19
+#endif
+
+#ifndef I2S_SDOUT_PIN
+#define I2S_SDOUT_PIN 31
+#endif
+
+#ifndef I2S_CONFIG_SCK_PIN
+#define I2S_CONFIG_SCK_PIN 21
+#endif
+
+#ifndef I2S_CONFIG_LRCK_PIN
+#define I2S_CONFIG_LRCK_PIN 20
+#endif
+
+#ifndef I2S_CONFIG_MCK_PIN
+#define I2S_CONFIG_MCK_PIN 255
+#endif
+
+#ifndef I2S_CONFIG_SDOUT_PIN
+#define I2S_CONFIG_SDOUT_PIN 255
+#endif
+
+#ifndef I2S_CONFIG_SDIN_PIN
+#define I2S_CONFIG_SDIN_PIN 19
+#endif
+
+#ifndef I2S_CONFIG_MASTER
+#define I2S_CONFIG_MASTER 0
+#endif
+
+#ifndef I2S_CONFIG_FORMAT
+#define I2S_CONFIG_FORMAT 0
+#endif
+
+#ifndef I2S_CONFIG_ALIGN
+#define I2S_CONFIG_ALIGN 0
+#endif
+
+#ifndef I2S_CONFIG_SWIDTH
+#define I2S_CONFIG_SWIDTH 2
+#endif
+
+#ifndef I2S_CONFIG_CHANNELS
+#define I2S_CONFIG_CHANNELS 1
+#endif
+
+#ifndef I2S_CONFIG_MCK_SETUP
+#define I2S_CONFIG_MCK_SETUP 1342177280
+#endif
+
+#ifndef I2S_CONFIG_RATIO
+#define I2S_CONFIG_RATIO 6
+#endif
+
+#ifndef I2S_CONFIG_IRQ_PRIORITY
+#define I2S_CONFIG_IRQ_PRIORITY 6
+#endif
+
+#ifndef I2S_CONFIG_LOG_ENABLED
+#define I2S_CONFIG_LOG_ENABLED 1
+#endif
+
+#ifndef I2S_CONFIG_LOG_LEVEL
+#define I2S_CONFIG_LOG_LEVEL 3
+#endif
+
+#ifndef I2S_CONFIG_INFO_COLOR
+#define I2S_CONFIG_INFO_COLOR 0
+#endif
+
+#ifndef I2S_CONFIG_DEBUG_COLOR
+#define I2S_CONFIG_DEBUG_COLOR 0
+#endif
+
+#ifndef NRFX_I2S_ENABLED
+#define NRFX_I2S_ENABLED 1
+#endif
+// <o> NRFX_I2S_CONFIG_SCK_PIN - SCK pin  <0-31> 
+
+
+#ifndef NRFX_I2S_CONFIG_SCK_PIN
+#define NRFX_I2S_CONFIG_SCK_PIN 21
+#endif
+
+// <o> NRFX_I2S_CONFIG_LRCK_PIN - LRCK pin  <1-31> 
+
+
+#ifndef NRFX_I2S_CONFIG_LRCK_PIN
+#define NRFX_I2S_CONFIG_LRCK_PIN 20
+#endif
+
+// <o> NRFX_I2S_CONFIG_MCK_PIN - MCK pin 
+#ifndef NRFX_I2S_CONFIG_MCK_PIN
+#define NRFX_I2S_CONFIG_MCK_PIN 255
+#endif
+
+// <o> NRFX_I2S_CONFIG_SDOUT_PIN - SDOUT pin  <0-31> 
+
+
+#ifndef NRFX_I2S_CONFIG_SDOUT_PIN
+#define NRFX_I2S_CONFIG_SDOUT_PIN 255
+#endif
+
+// <o> NRFX_I2S_CONFIG_SDIN_PIN - SDIN pin  <0-31> 
+
+
+#ifndef NRFX_I2S_CONFIG_SDIN_PIN
+#define NRFX_I2S_CONFIG_SDIN_PIN 19
+#endif
+
+// <o> NRFX_I2S_CONFIG_MASTER  - Mode
+ 
+// <0=> Master 
+// <1=> Slave 
+
+#ifndef NRFX_I2S_CONFIG_MASTER
+#define NRFX_I2S_CONFIG_MASTER 0
+#endif
+
+// <o> NRFX_I2S_CONFIG_FORMAT  - Format
+ 
+// <0=> I2S 
+// <1=> Aligned 
+
+#ifndef NRFX_I2S_CONFIG_FORMAT
+#define NRFX_I2S_CONFIG_FORMAT 0
+#endif
+
+// <o> NRFX_I2S_CONFIG_ALIGN  - Alignment
+ 
+// <0=> Left 
+// <1=> Right 
+
+#ifndef NRFX_I2S_CONFIG_ALIGN
+#define NRFX_I2S_CONFIG_ALIGN 0
+#endif
+
+// <o> NRFX_I2S_CONFIG_SWIDTH  - Sample width (bits)
+ 
+// <0=> 8 
+// <1=> 16 
+// <2=> 24 
+
+#ifndef NRFX_I2S_CONFIG_SWIDTH
+#define NRFX_I2S_CONFIG_SWIDTH 1
+#endif
+
+// <o> NRFX_I2S_CONFIG_CHANNELS  - Channels
+ 
+// <0=> Stereo 
+// <1=> Left 
+// <2=> Right 
+
+#ifndef NRFX_I2S_CONFIG_CHANNELS
+#define NRFX_I2S_CONFIG_CHANNELS 1
+#endif
+
+// <o> NRFX_I2S_CONFIG_MCK_SETUP  - MCK behavior
+ 
+// <0=> Disabled 
+// <2147483648=> 32MHz/2 
+// <1342177280=> 32MHz/3 
+// <1073741824=> 32MHz/4 
+// <805306368=> 32MHz/5 
+// <671088640=> 32MHz/6 
+// <536870912=> 32MHz/8 
+// <402653184=> 32MHz/10 
+// <369098752=> 32MHz/11 
+// <285212672=> 32MHz/15 
+// <268435456=> 32MHz/16 
+// <201326592=> 32MHz/21 
+// <184549376=> 32MHz/23 
+// <142606336=> 32MHz/30 
+// <138412032=> 32MHz/31 
+// <134217728=> 32MHz/32 
+// <100663296=> 32MHz/42 
+// <68157440=> 32MHz/63 
+// <34340864=> 32MHz/125 
+
+#ifndef NRFX_I2S_CONFIG_MCK_SETUP
+#define NRFX_I2S_CONFIG_MCK_SETUP 1342177280
+#endif
+
+// <o> NRFX_I2S_CONFIG_RATIO  - MCK/LRCK ratio
+ 
+// <0=> 32x 
+// <1=> 48x 
+// <2=> 64x 
+// <3=> 96x 
+// <4=> 128x 
+// <5=> 192x 
+// <6=> 256x 
+// <7=> 384x 
+// <8=> 512x 
+
+#ifndef NRFX_I2S_CONFIG_RATIO
+#define NRFX_I2S_CONFIG_RATIO 6
+#endif
+
+// <o> NRFX_I2S_CONFIG_IRQ_PRIORITY  - Interrupt priority
+ 
+// <0=> 0 (highest) 
+// <1=> 1 
+// <2=> 2 
+// <3=> 3 
+// <4=> 4 
+// <5=> 5 
+// <6=> 6 
+// <7=> 7 
+
+#ifndef NRFX_I2S_CONFIG_IRQ_PRIORITY
+#define NRFX_I2S_CONFIG_IRQ_PRIORITY 6
+#endif
+
+// <e> NRFX_I2S_CONFIG_LOG_ENABLED - Enables logging in the module.
+//==========================================================
+#ifndef NRFX_I2S_CONFIG_LOG_ENABLED
+#define NRFX_I2S_CONFIG_LOG_ENABLED 1
+#endif
+// <o> NRFX_I2S_CONFIG_LOG_LEVEL  - Default Severity level
+ 
+// <0=> Off 
+// <1=> Error 
+// <2=> Warning 
+// <3=> Info 
+// <4=> Debug 
+
+#ifndef NRFX_I2S_CONFIG_LOG_LEVEL
+#define NRFX_I2S_CONFIG_LOG_LEVEL 3
+#endif
+
+// <o> NRFX_I2S_CONFIG_INFO_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef NRFX_I2S_CONFIG_INFO_COLOR
+#define NRFX_I2S_CONFIG_INFO_COLOR 0
+#endif
+
+// <o> NRFX_I2S_CONFIG_DEBUG_COLOR  - ANSI escape code prefix.
+ 
+// <0=> Default 
+// <1=> Black 
+// <2=> Red 
+// <3=> Green 
+// <4=> Yellow 
+// <5=> Blue 
+// <6=> Magenta 
+// <7=> Cyan 
+// <8=> White 
+
+#ifndef NRFX_I2S_CONFIG_DEBUG_COLOR
+#define NRFX_I2S_CONFIG_DEBUG_COLOR 0
+#endif
+
+
+
 
 // <<< end of configuration section >>>
 #endif //SDK_CONFIG_H
