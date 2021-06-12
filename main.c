@@ -43,6 +43,7 @@
 
 #include "nrf.h"
 #include "app_util.h"
+#include "nrf_drv_rtc.h"
 #include "nrf_drv_i2s.h"
 #include "nrf_drv_usbd.h"
 #include "nrf_drv_clock.h"
@@ -74,6 +75,8 @@
 #define LED_USB_START  (BSP_BOARD_LED_1)
 #define LED_AUDIO_RX   (BSP_BOARD_LED_2)
 #define LED_AUDIO_TX   (BSP_BOARD_LED_3)
+
+const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(2);
 
 /**
  * @brief USB audio samples size
@@ -145,11 +148,11 @@ static void mic_audio_user_ev_handler(app_usbd_class_inst_t const * p_inst,
  */
 APP_USBD_AUDIO_FORMAT_DESCRIPTOR(m_mic_form_desc, 
                                  APP_USBD_AUDIO_AS_FORMAT_I_DSC(    /* Format type 1 descriptor */
-                                    2,                              /* Number of channels */
+                                    1,                              /* Number of channels */
                                     2,                              /* Subframe size */
                                     16,                             /* Bit resolution */
                                     1,                              /* Frequency type */
-                                    APP_USBD_U24_TO_RAW_DSC(48000)) /* Frequency */
+                                    APP_USBD_U24_TO_RAW_DSC(44100)) /* Frequency */
                                 );
 
 /**
@@ -159,7 +162,7 @@ APP_USBD_AUDIO_INPUT_DESCRIPTOR(m_mic_inp_desc,
                                 APP_USBD_AUDIO_INPUT_TERMINAL_DSC(
                                     1,                                     /* Terminal ID */
                                     APP_USBD_AUDIO_TERMINAL_IN_MICROPHONE, /* Terminal type */
-                                    2,                                     /* Number of channels */
+                                    1,                                     /* Number of channels */
                                     MIC_TERMINAL_CH_CONFIG())              /* Channels config */
                                 );
 
@@ -287,7 +290,7 @@ APP_USBD_AUDIO_GLOBAL_DEF(m_app_audio_microphone,
  */
 // static int16_t  m_temp_buffer[2 * BUFFER_SIZE];
 
-#define I2S_DATA_BLOCK_WORDS    512
+#define I2S_DATA_BLOCK_WORDS    48
 static uint32_t m_buffer_rx[2][I2S_DATA_BLOCK_WORDS];
 static uint32_t const * volatile mp_block_to_check = NULL;
 
@@ -505,10 +508,10 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
             bsp_board_leds_off();
             break;
         case APP_USBD_EVT_DRV_RESUME:
-            bsp_board_led_on(LED_USB_RESUME);
+            // bsp_board_led_on(LED_USB_RESUME);
             break;
         case APP_USBD_EVT_STARTED:
-            bsp_board_led_on(LED_USB_START);
+            // bsp_board_led_on(LED_USB_START);
             break;
         case APP_USBD_EVT_STOPPED:
             app_usbd_disable();
@@ -556,7 +559,8 @@ static bool check_samples(uint32_t const * p_block)
         {
             --m_zero_samples_to_ignore;
         }
-        else {
+        else
+        {
             ret_code_t ret;
             /* Block from headphones copied into buffer, send it into microphone input */
             ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, p_block, I2S_DATA_BLOCK_WORDS);
@@ -566,7 +570,6 @@ static bool check_samples(uint32_t const * p_block)
             }
         }
     }
-    NRF_LOG_INFO("%3u: OK", m_blocks_transferred);
     return true;
 }
 
@@ -616,7 +619,9 @@ static void data_handler(nrf_drv_i2s_buffers_t const * p_released,
 
 static void check_rx_data(uint32_t const * p_block)
 {
-    ++m_blocks_transferred;
+    if (m_blocks_transferred < m_zero_samples_to_ignore) {
+        ++m_blocks_transferred;
+    }
 
     if (!m_error_encountered)
     {
@@ -631,9 +636,9 @@ static void check_rx_data(uint32_t const * p_block)
     }
     else
     {
-        NRF_LOG_INFO("rx");
+        // NRF_LOG_INFO("rx");
         // bsp_board_led_off(LED_ERROR);
-        // bsp_board_led_invert(LED_OK);
+        bsp_board_led_invert(BSP_BOARD_LED_1);
     }
 }
 
@@ -656,6 +661,25 @@ void i2s_init()
     APP_ERROR_CHECK(ret);
 }
 
+static void rtc_config(void)
+{
+    uint32_t err_code;
+
+    //Initialize RTC instance
+    nrf_drv_rtc_config_t config = NRF_DRV_RTC_DEFAULT_CONFIG;
+    config.prescaler = 1;
+    err_code = nrfx_rtc_init(&rtc, &config, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    //Power on RTC instance
+    nrfx_rtc_enable(&rtc);
+}
+
+uint32_t get_rtc_counter(void)
+{
+    return NRF_RTC2->COUNTER;
+}
+
 int main(void)
 {
     ret_code_t ret;
@@ -667,7 +691,9 @@ int main(void)
     // Initialize LEDs and buttons
     bsp_board_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS);
 
-    ret = NRF_LOG_INIT(NULL);
+    rtc_config();
+
+    ret = NRF_LOG_INIT(get_rtc_counter);
     APP_ERROR_CHECK(ret);
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 
@@ -683,6 +709,8 @@ int main(void)
         app_usbd_audio_class_inst_get(&m_app_audio_microphone);
     ret = app_usbd_class_append(class_inst_mic);
     APP_ERROR_CHECK(ret);
+
+    bsp_board_leds_off();
 
     if (USBD_POWER_DETECTION)
     {
