@@ -1775,7 +1775,7 @@
 #endif
 // <o> NRF_LOG_TIMESTAMP_DEFAULT_FREQUENCY - Default frequency of the timestamp (in Hz) or 0 to use app_timer frequency. 
 #ifndef NRF_LOG_TIMESTAMP_DEFAULT_FREQUENCY
-#define NRF_LOG_TIMESTAMP_DEFAULT_FREQUENCY 8
+#define NRF_LOG_TIMESTAMP_DEFAULT_FREQUENCY 16384
 #endif
 
 // </e>

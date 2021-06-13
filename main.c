@@ -152,7 +152,7 @@ APP_USBD_AUDIO_FORMAT_DESCRIPTOR(m_mic_form_desc,
                                     2,                              /* Subframe size */
                                     16,                             /* Bit resolution */
                                     1,                              /* Frequency type */
-                                    APP_USBD_U24_TO_RAW_DSC(42000)) /* Frequency */
+                                    APP_USBD_U24_TO_RAW_DSC(44100)) /* Frequency */
                                 );
 
 /**
@@ -290,11 +290,11 @@ APP_USBD_AUDIO_GLOBAL_DEF(m_app_audio_microphone,
  */
 // static int16_t  m_temp_buffer[2 * BUFFER_SIZE];
 
-#define I2S_DATA_BLOCK_WORDS 512
+#define I2S_DATA_BLOCK_WORDS 64
 static uint32_t m_buffer_rx[2][I2S_DATA_BLOCK_WORDS];
 static uint32_t const * volatile mp_block_to_check = NULL;
 
-#define AUDIO_BUF_SIZE 512
+#define AUDIO_BUF_SIZE 32768
 static uint16_t m_audio_buffer[AUDIO_BUF_SIZE];
 static uint16_t read_pos = 0;
 static uint16_t write_pos = 0;
@@ -514,8 +514,8 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
                 break;
             }
 
-            int len = 42;
-            if (buffer_length > len) {
+            int len = 45;
+            if (buffer_length >= len) {
                 uint16_t buf[len];
                 for (int i=0;i<len;i++) {
                     buf[i] = m_audio_buffer[read_pos++];
@@ -525,10 +525,10 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
                 }
                 
                 /* Block from headphones copied into buffer, send it into microphone input */
-                ret_code_t ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, buf, len*2);
+                ret_code_t ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, buf, len * 2);
                 if (NRF_SUCCESS == ret)
                 {
-                    bsp_board_led_invert(LED_AUDIO_RX);
+                    bsp_board_led_invert(LED_AUDIO_TX);
                     buffer_length -= len;
                 }
             }
@@ -600,7 +600,6 @@ static bool check_samples(uint32_t const * p_block)
             }
         }
     }
-
     return true;
 }
 
@@ -682,7 +681,7 @@ void i2s_init()
     config.sck_pin   = I2S_CONFIG_SCK_PIN;
     config.sdout_pin = NRFX_I2S_PIN_NOT_USED;
     config.mck_pin   = NRFX_I2S_PIN_NOT_USED;
-    config.mck_setup = NRF_I2S_MCK_32MDIV8;
+    config.mck_setup = NRF_I2S_MCK_32MDIV11;
     config.ratio     = NRF_I2S_RATIO_64X;
     config.channels  = NRF_I2S_CHANNELS_LEFT;
     config.mode      = NRF_I2S_MODE_MASTER;
