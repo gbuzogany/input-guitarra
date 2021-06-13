@@ -81,7 +81,7 @@ const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(2);
 /**
  * @brief USB audio samples size
  */
-#define BUFFER_SIZE  (48)
+#define BUFFER_SIZE  (24)
 
 /**
  * @brief Enable power USB detection
@@ -126,7 +126,7 @@ static void mic_audio_user_ev_handler(app_usbd_class_inst_t const * p_inst,
  * @brief   Input terminal channel configuration
  */
 #define MIC_TERMINAL_CH_CONFIG()                                                                       \
-        (APP_USBD_AUDIO_IN_TERM_CH_CONFIG_LEFT_FRONT | APP_USBD_AUDIO_IN_TERM_CH_CONFIG_RIGHT_FRONT)
+        (APP_USBD_AUDIO_IN_TERM_CH_CONFIG_LEFT_FRONT)
 
 /**
  * @brief   Feature controls
@@ -152,7 +152,7 @@ APP_USBD_AUDIO_FORMAT_DESCRIPTOR(m_mic_form_desc,
                                     2,                              /* Subframe size */
                                     16,                             /* Bit resolution */
                                     1,                              /* Frequency type */
-                                    APP_USBD_U24_TO_RAW_DSC(44100)) /* Frequency */
+                                    APP_USBD_U24_TO_RAW_DSC(42000)) /* Frequency */
                                 );
 
 /**
@@ -290,9 +290,15 @@ APP_USBD_AUDIO_GLOBAL_DEF(m_app_audio_microphone,
  */
 // static int16_t  m_temp_buffer[2 * BUFFER_SIZE];
 
-#define I2S_DATA_BLOCK_WORDS    48
+#define I2S_DATA_BLOCK_WORDS 512
 static uint32_t m_buffer_rx[2][I2S_DATA_BLOCK_WORDS];
 static uint32_t const * volatile mp_block_to_check = NULL;
+
+#define AUDIO_BUF_SIZE 512
+static uint16_t m_audio_buffer[AUDIO_BUF_SIZE];
+static uint16_t read_pos = 0;
+static uint16_t write_pos = 0;
+static uint32_t buffer_length = 0;
 
 #define BLOCKS_TO_TRANSFER  20
 
@@ -503,6 +509,29 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
     switch (event)
     {
         case APP_USBD_EVT_DRV_SOF:
+            if (APP_USBD_STATE_Configured != app_usbd_core_state_get())
+            {
+                break;
+            }
+
+            int len = 42;
+            if (buffer_length > len) {
+                uint16_t buf[len];
+                for (int i=0;i<len;i++) {
+                    buf[i] = m_audio_buffer[read_pos++];
+                    if (read_pos >= AUDIO_BUF_SIZE) {
+                        read_pos -= AUDIO_BUF_SIZE;
+                    }
+                }
+                
+                /* Block from headphones copied into buffer, send it into microphone input */
+                ret_code_t ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, buf, len*2);
+                if (NRF_SUCCESS == ret)
+                {
+                    bsp_board_led_invert(LED_AUDIO_RX);
+                    buffer_length -= len;
+                }
+            }
             break;
         case APP_USBD_EVT_DRV_SUSPEND:
             bsp_board_leds_off();
@@ -543,33 +572,35 @@ static bool check_samples(uint32_t const * p_block)
 {
     // [each data word contains one 24 biut]
     uint32_t i;
+
     for (i = 0; i < I2S_DATA_BLOCK_WORDS; ++i)
     {
+
         uint32_t const * p_word = &p_block[i];
-        uint16_t actual_sample_l = ((uint16_t const *)p_word)[0];
-        uint16_t actual_sample_r = ((uint16_t const *)p_word)[1];
+        uint16_t sample_1 = ((uint16_t const *)p_word)[0];
+        uint16_t sample_0 = ((uint16_t const *)p_word)[1];
 
         // Normally a couple of initial samples sent by the I2S peripheral
         // will have zero values, because it starts to output the clock
         // before the actual data is fetched by EasyDMA. As we are dealing
         // with streaming the initial zero samples can be simply ignored.
         if (m_zero_samples_to_ignore > 0 &&
-            actual_sample_l == 0 &&
-            actual_sample_r == 0)
+            sample_1 == 0 &&
+            sample_0 == 0)
         {
             --m_zero_samples_to_ignore;
         }
-        else
-        {
-            ret_code_t ret;
-            /* Block from headphones copied into buffer, send it into microphone input */
-            ret = app_usbd_audio_class_tx_start(&m_app_audio_microphone.base, p_block, I2S_DATA_BLOCK_WORDS);
-            if (NRF_SUCCESS == ret)
-            {
-                bsp_board_led_invert(LED_AUDIO_RX);
+        else {
+            m_audio_buffer[write_pos+1]   = sample_0;
+            m_audio_buffer[write_pos] = sample_1;
+            write_pos+= 2;
+            buffer_length += 2;
+            if (write_pos >= AUDIO_BUF_SIZE) {
+                write_pos -= AUDIO_BUF_SIZE;
             }
         }
     }
+
     return true;
 }
 
@@ -728,6 +759,10 @@ int main(void)
     mp_block_to_check = NULL;
     m_blocks_transferred = 0;
 
+    UNUSED_VARIABLE(m_audio_buffer);
+    UNUSED_VARIABLE(read_pos);
+    UNUSED_VARIABLE(write_pos);
+
     i2s_init();
 
     nrf_drv_i2s_buffers_t const initial_buffers = {
@@ -736,6 +771,8 @@ int main(void)
     };
     ret = nrf_drv_i2s_start(&initial_buffers, I2S_DATA_BLOCK_WORDS, 0);
     APP_ERROR_CHECK(ret);
+
+    int i = 0;
 
     while (true)
     {
@@ -750,10 +787,16 @@ int main(void)
             check_rx_data(mp_block_to_check);
             mp_block_to_check = NULL;
         }
+    
+        if (i % 1000 == 0) {
+            NRF_LOG_INFO("Buffer: %d", buffer_length);
+            i = 0;
+        }
 
         UNUSED_RETURN_VALUE(NRF_LOG_PROCESS());
         /* Sleep CPU only if there was no interrupt since last loop processing */
         __WFE();
+        i++;
     }
 }
 
