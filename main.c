@@ -79,11 +79,6 @@
 const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(2);
 
 /**
- * @brief USB audio samples size
- */
-#define BUFFER_SIZE  (24)
-
-/**
  * @brief Enable power USB detection
  *
  * Configure if example supports USB port connection
@@ -198,11 +193,11 @@ APP_USBD_AUDIO_GLOBAL_DEF(m_app_audio_microphone,
  * @brief Internal audio temporary buffer
  */
 
-#define I2S_DATA_BLOCK_WORDS 64
+#define I2S_DATA_BLOCK_WORDS 32
 static uint32_t m_buffer_rx[2][I2S_DATA_BLOCK_WORDS];
 static uint32_t const * volatile mp_block_to_check = NULL;
 
-#define AUDIO_BUF_SIZE 32768
+#define AUDIO_BUF_SIZE 512
 static uint16_t m_audio_buffer[AUDIO_BUF_SIZE];
 static uint16_t read_pos = 0;
 static uint16_t write_pos = 0;
@@ -216,6 +211,7 @@ static bool             m_error_encountered;
 static bool             m_recording = false;
 static uint32_t         m_tx_cnt    = 0;
 
+static bool             buffer_full = false;
 /**
  * @brief The size of last received block from the microphone
  */
@@ -319,13 +315,19 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
 
             if (buffer_length >= 47) {
                 uint32_t len = 47;
-                if (buffer_length > 47*4) {
+                if (buffer_length > 47*3) {
                     len = 48;
                 }
                 
                 uint16_t buf[len];
                 for (int i=0;i<len;i++) {
-                    buf[i] = m_audio_buffer[read_pos++];
+                    if (m_mute_mic) {
+                        buf[i] = 0;
+                        read_pos++;
+                    }
+                    else {
+                        buf[i] = m_audio_buffer[read_pos++];
+                    }
                     if (read_pos >= AUDIO_BUF_SIZE) {
                         read_pos -= AUDIO_BUF_SIZE;
                     }
@@ -410,12 +412,18 @@ static bool check_samples(uint32_t const * p_block)
             --m_zero_samples_to_ignore;
         }
         else {
-            m_audio_buffer[write_pos+1]   = sample_0;
-            m_audio_buffer[write_pos] = sample_1;
-            write_pos+= 2;
-            buffer_length += 2;
-            if (write_pos >= AUDIO_BUF_SIZE) {
-                write_pos -= AUDIO_BUF_SIZE;
+            if (buffer_length < AUDIO_BUF_SIZE - 2) {
+                m_audio_buffer[write_pos+1]   = sample_0;
+                m_audio_buffer[write_pos] = sample_1;
+                write_pos+= 2;
+
+                buffer_length += 2;
+                if (write_pos >= AUDIO_BUF_SIZE) {
+                    write_pos -= AUDIO_BUF_SIZE;
+                }
+            }
+            else {
+                buffer_full = true;
             }
         }
     }
@@ -605,12 +613,16 @@ int main(void)
             // mp_block_to_check = NULL;
         }
     
-        if (i % 1000 == 0) {
+        if (i % 5000 == 0) {
             if (m_tx_cnt > 0) {
                 NRF_LOG_INFO("TX Failed: %d", m_tx_cnt);
                 m_tx_cnt = 0;
             }
-            // NRF_LOG_INFO("Buffer: %d", buffer_length);
+            if (buffer_full) {
+                NRF_LOG_INFO("Buffer filled");
+                buffer_full = false;
+            }
+            NRF_LOG_INFO("Buffer: %d", buffer_length);
             i = 0;
         }
 
