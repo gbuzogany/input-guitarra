@@ -127,7 +127,7 @@ APP_USBD_AUDIO_FORMAT_DESCRIPTOR(m_mic_form_desc,
                                     2,                              /* Subframe size */
                                     16,                             /* Bit resolution */
                                     1,                              /* Frequency type */
-                                    APP_USBD_U24_TO_RAW_DSC(47619)) /* Frequency */
+                                    APP_USBD_U24_TO_RAW_DSC(41667)) /* Frequency */
                                 );
 
 /**
@@ -313,10 +313,10 @@ static void usbd_user_ev_handler(app_usbd_event_type_t event)
                 break;
             }
 
-            if (buffer_length >= 47) {
-                uint32_t len = 47;
-                if (buffer_length > 47*3) {
-                    len = 48;
+            if (buffer_length >= 41) {
+                uint32_t len = 41;
+                if (buffer_length > 41*3) {
+                    len = 42;
                 }
                 
                 uint16_t buf[len];
@@ -506,11 +506,11 @@ void i2s_init()
     config.lrck_pin  = I2S_CONFIG_LRCK_PIN;
     config.sck_pin   = I2S_CONFIG_SCK_PIN;
     config.sdout_pin = NRFX_I2S_PIN_NOT_USED;
-    config.mck_pin   = NRFX_I2S_PIN_NOT_USED;
-    config.mck_setup = NRF_I2S_MCK_32MDIV21;
-    config.ratio     = NRF_I2S_RATIO_32X;
+    config.mck_pin   = I2S_CONFIG_MCK_PIN;
+    config.mck_setup = NRF_I2S_MCK_32MDIV2;
+    config.ratio     = NRF_I2S_RATIO_256X;
     config.channels  = NRF_I2S_CHANNELS_LEFT;
-    config.mode      = NRF_I2S_MODE_MASTER;
+    config.mode      = NRF_I2S_MODE_SLAVE;
     config.sample_width = NRF_I2S_SWIDTH_16BIT;
 
     ret_code_t ret = nrf_drv_i2s_init(&config, data_handler);
@@ -622,7 +622,7 @@ int main(void)
                 NRF_LOG_INFO("Buffer filled");
                 buffer_full = false;
             }
-            NRF_LOG_INFO("Buffer: %d", buffer_length);
+            // NRF_LOG_INFO("Buffer: %d", buffer_length);
             i = 0;
         }
 
